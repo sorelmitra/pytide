@@ -104,15 +104,12 @@ def test_generate_one_cycle_from_neaps_to_springs():
 	tide_days = generate_tide_days(start_date=(reset_day() + datetime.timedelta(hours=3, minutes=10)), heights_count=0, cycle_length=8, delta=delta)
 	assert len(tide_days) == 8
 
-	old_neap_level = None
+	old_neap_level = tide_days[0].neap_level + 1
 	for tide_day in tide_days:
 		# check that neap levels are decreasing
 		print(f"Neap level for day {tide_day.date.day} is {tide_day.neap_level}")
-		if old_neap_level is None:
-			assert tide_day.neap_level == NEAP_MAX
-			old_neap_level = tide_day.neap_level
-		else:
-			assert tide_day.neap_level < old_neap_level
+		assert tide_day.neap_level < old_neap_level
+		old_neap_level = tide_day.neap_level
 
 		# check that high water levels are increasing
 		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.HW,
