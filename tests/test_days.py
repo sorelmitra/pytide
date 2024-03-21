@@ -3,6 +3,7 @@ import datetime
 from src.tide_model import NEAP_MAX
 from src.tide_tables import reset_day, TideHeight, generate_tide_days, compute_max_hw, compute_springs_mean, \
 	compute_max_lw, compute_neaps_mean
+from tests.libtest import get_last_hw, get_first_lw, get_last_height, get_first_height
 
 
 def test_generate_one_height():
@@ -97,34 +98,6 @@ def check_water_levels(*, tide_day, tide_life_cycle, predicate=lambda height1, h
 				assert predicate(tide_value.height, prev_tide_value.height)
 				prev_tide_value = tide_value
 	print()
-
-
-def get_last_hw(*, tide_days, day_number):
-	index = day_number - 1
-	high_waters = [t for t in tide_days[index].heights if t.type == TideHeight.HW]
-	return high_waters[len(high_waters) - 1].height
-
-
-def get_first_lw(*, tide_days, day_number):
-	index = day_number - 1
-	low_waters = [t for t in tide_days[index].heights if t.type == TideHeight.LW]
-	return low_waters[0].height
-
-
-def get_first_height(*, tide_days, day_number):
-	index = day_number - 1
-	hw = [t for t in tide_days[index].heights if t.type == TideHeight.HW][0]
-	lw = [t for t in tide_days[index].heights if t.type == TideHeight.LW][0]
-	return hw.height - lw.height
-
-
-def get_last_height(*, tide_days, day_number):
-	index = day_number - 1
-	high_waters = [t for t in tide_days[index].heights if t.type == TideHeight.HW]
-	hw = high_waters[len(high_waters) - 1]
-	low_waters = [t for t in tide_days[index].heights if t.type == TideHeight.LW]
-	lw = low_waters[len(low_waters) - 1]
-	return hw.height - lw.height
 
 
 def test_generate_one_cycle_from_neaps_to_springs():
