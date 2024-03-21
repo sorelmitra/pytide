@@ -3,19 +3,15 @@ import random
 
 from src.tide_model import semidiurnal_tide, NEAP_MAX
 from src.tide_plot import plot_tide
-from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
+from src.tide_tables import generate_tide_cycle, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
 	compute_max_lw
 
 if __name__ == '__main__':
 	cycle_length = random.randint(7, 9)
 	start_date = reset_day() + datetime.timedelta(hours=3, minutes=10)
-	tide_days = generate_tide_days(
-		start_date=start_date,
-		cycle_length=cycle_length,
-		delta=datetime.timedelta(hours=6, minutes=20),
-		min_water_factor=2,
-		max_water_factor=5
-	)
+	tide_days = generate_tide_cycle(start_date=start_date, cycle_length=cycle_length,
+									delta=datetime.timedelta(hours=6, minutes=20), min_water_factor=2,
+									max_water_factor=5)
 
 	print(f"Month: {start_date.strftime('%B')}, generating a full cycle of {cycle_length} days length")
 	print()

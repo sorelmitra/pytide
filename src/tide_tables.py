@@ -49,16 +49,54 @@ class TideDay:
 		print()
 
 
-# Generates a list of tide days
+class NeapDirection:
+	def __init__(self, cycle_length, from_neaps):
+		self.from_neaps = from_neaps
+		self.step = 0
+		if cycle_length > 1:
+			self.step = self.get_max() / (cycle_length * 2 - 1)
+
+	@staticmethod
+	def get_max():
+		return NEAP_MAX
+
+	def get_start(self):
+		if self.from_neaps:
+			return self.get_max()
+		return 0.0
+
+	def get_next(self, current):
+		if self.from_neaps:
+			return self._decrement(current)
+
+		return self._increment(current)
+
+	def _increment(self, current):
+		next_value = current + self.step
+		if next_value > self.get_max() - 0.05:
+			next_value = self.get_max()
+		return next_value
+
+	def _decrement(self, current):
+		next_value = current - self.step
+		if next_value < 0.05:
+			next_value = 0.0
+		return next_value
+
+
+# Generates a list of tide days, representing a full tide cycle
+# from neaps to springs or vice-versa
 # @param a_date: the date of the tide, a datetime object
 # @param heights_count: the number of heights to generate
 # @param cycle_length: the number of days in a neaps - springs cycle; if present, it overrides heights_count and generates a full cycle
 # @param delta: the time difference between heights
 # @param life_cycle: the type of tide height (high or low water)
-def generate_tide_days(start_date=datetime.datetime.now(), heights_count=1, cycle_length=0,
-					   delta=datetime.timedelta(hours=6, minutes=0), life_cycle=TideHeight.HW,
-					   min_water_factor=2, max_water_factor=5):
-	neap_level = NEAP_MAX
+def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cycle_length=0,
+						delta=datetime.timedelta(hours=6, minutes=0), life_cycle=TideHeight.HW, min_water_factor=2,
+						max_water_factor=5, from_neaps=True):
+	neap_dir = NeapDirection(cycle_length, from_neaps)
+	neap_level = neap_dir.get_start()
+
 	compute_current_height = semidiurnal_tide(
 		min_water_factor=min_water_factor,
 		max_water_factor=max_water_factor,
@@ -70,9 +108,6 @@ def generate_tide_days(start_date=datetime.datetime.now(), heights_count=1, cycl
 	old_a_date = start_date
 	current_life_cycle = life_cycle
 
-	step = 0
-	if cycle_length > 1:
-		step = neap_level / (cycle_length * 2 - 1)
 	if cycle_length > 0:
 		heights_count = cycle_length * 4
 
@@ -99,9 +134,7 @@ def generate_tide_days(start_date=datetime.datetime.now(), heights_count=1, cycl
 
 		neaps_cycle_count += 1
 		if neaps_cycle_count == 2:
-			neap_level = neap_level - step
-			if neap_level < 0.05:
-				neap_level = 0.0
+			neap_level = neap_dir.get_next(neap_level)
 			compute_current_height = semidiurnal_tide(
 				min_water_factor=min_water_factor,
 				max_water_factor=max_water_factor,
