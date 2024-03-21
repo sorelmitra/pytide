@@ -85,43 +85,42 @@ def test_generate_one_day_from_lw():
 	assert tide_height.type == TideHeight.HW
 
 
+def check_water_levels(*, tide_day, tide_life_cycle, predicate=lambda height1, height2: height1 == height2):
+	prev_tide_value = None
+	for tide_value in tide_day.heights:
+		if tide_value.type == tide_life_cycle:
+			if prev_tide_value is None:
+				prev_tide_value = tide_value
+			else:
+				print(
+					f"HW height for day {tide_day.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
+				assert predicate(tide_value.height, prev_tide_value.height)
+				prev_tide_value = tide_value
+	print()
+
+
 def test_generate_one_cycle_from_neaps_to_springs():
 	delta = datetime.timedelta(hours=6, minutes=20)
 	tide_days = generate_tide_days(start_date=(reset_day() + datetime.timedelta(hours=3, minutes=10)), heights_count=0, cycle_length=8, delta=delta)
 	assert len(tide_days) == 8
 
 	old_neap_level = None
-	for tide in tide_days:
+	for tide_day in tide_days:
 		# check that neap levels are decreasing
-		print(f"Neap level for day {tide.date.day} is {tide.neap_level}")
+		print(f"Neap level for day {tide_day.date.day} is {tide_day.neap_level}")
 		if old_neap_level is None:
-			assert tide.neap_level == NEAP_MAX
-			old_neap_level = tide.neap_level
+			assert tide_day.neap_level == NEAP_MAX
+			old_neap_level = tide_day.neap_level
 		else:
-			assert tide.neap_level < old_neap_level
+			assert tide_day.neap_level < old_neap_level
 
 		# check that high water levels are increasing
-		prev_tide_value = None
-		for tide_value in tide.heights:
-			if tide_value.type == TideHeight.HW:
-				if prev_tide_value is None:
-					prev_tide_value = tide_value
-				else:
-					print(f"HW height for day {tide.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
-					assert tide_value.height > prev_tide_value.height + 0.04
-					prev_tide_value = tide_value
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.HW,
+						   predicate=lambda h1, h2: h1 > h2 + 0.04)
 
 		# check that low water levels are decreasing
-		prev_tide_value = None
-		for tide_value in tide.heights:
-			if tide_value.type == TideHeight.LW:
-				if prev_tide_value is None:
-					prev_tide_value = tide_value
-				else:
-					print(f"LW height for day {tide.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
-					assert tide_value.height < prev_tide_value.height - 0.01
-					prev_tide_value = tide_value
-		print()
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.LW,
+						   predicate=lambda h1, h2: h1 < h2 - 0.01)
 
 	high_waters = [t for t in tide_days[7].heights if t.type == TideHeight.HW]
 	tide_day_7_hw = high_waters[len(high_waters) - 1]
