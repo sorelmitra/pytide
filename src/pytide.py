@@ -10,7 +10,7 @@ if __name__ == '__main__':
 	cycle_length = random.randint(7, 9)
 	start_date = reset_day() + datetime.timedelta(hours=3, minutes=10)
 	tide_days = generate_tide_cycle(start_date=start_date, cycle_length=cycle_length,
-									delta=datetime.timedelta(hours=6, minutes=20), min_water_factor=2,
+									time_delta=datetime.timedelta(hours=6, minutes=20), min_water_factor=2,
 									max_water_factor=5)
 
 	print(f"Month: {start_date.strftime('%B')}, generating a full cycle of {cycle_length} days length")

@@ -50,23 +50,31 @@ class TideDay:
 
 
 class NeapDirection:
-	def __init__(self, cycle_length, from_neaps):
-		self.from_neaps = from_neaps
+	def __init__(self, *, cycle_length, tide_range_should_increase, start_days_after_neaps):
+		self.tide_range_should_increase = tide_range_should_increase
 		self.step = 0
 		if cycle_length > 1:
 			self.step = self.get_max() / (cycle_length * 2 - 1)
+		self.start_from_offset = 0
+		if start_days_after_neaps is not None:
+			self.start_from_offset = start_days_after_neaps * 2
+		print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
 
 	@staticmethod
 	def get_max():
 		return NEAP_MAX
 
 	def get_start(self):
-		if self.from_neaps:
+		if self.start_from_offset > 0:
+			# start with 'offset' steps down from max
+			return self.get_max() - self.start_from_offset * self.step
+
+		if self.tide_range_should_increase:
 			return self.get_max()
 		return 0.0
 
 	def get_next(self, current):
-		if self.from_neaps:
+		if self.tide_range_should_increase:
 			return self._decrement(current)
 
 		return self._increment(current)
@@ -83,18 +91,45 @@ class NeapDirection:
 			next_value = 0.0
 		return next_value
 
+	def is_at_end(self, level):
+		if self.tide_range_should_increase:
+			return level == 0.0
+		return level == self.get_max()
+
+	def reverse(self):
+		self.tide_range_should_increase = not self.tide_range_should_increase
+		print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
+		pass
+
 
 # Generates a list of tide days, representing a full tide cycle
 # from neaps to springs or vice-versa
-# @param a_date: the date of the tide, a datetime object
+# @param start_date: the date of the tide, a datetime object
 # @param heights_count: the number of heights to generate
-# @param cycle_length: the number of days in a neaps - springs cycle; if present, it overrides heights_count and generates a full cycle
-# @param delta: the time difference between heights
-# @param life_cycle: the type of tide height (high or low water)
+# @param cycle_length: the number of days in a neaps - springs cycle; if present, it overrides
+# heights_count and generates a full cycle
+# @param time_delta: the time difference between heights
+# @param start_life_cycle: the type of tide height (high or low water) to use when stating
+# @param min_water_factor: the minimum water height factor, it affects generated low tide values
+# @param max_water_factor: the maximum water height factor, it affects generated high tide values
+# @param go_towards_springs: a boolean value that indicates
+# if the tide range should initially increase (i.e. progress towards springs),
+# or decrease (i.e. progress towards neaps)
 def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cycle_length=0,
-						delta=datetime.timedelta(hours=6, minutes=0), life_cycle=TideHeight.HW, min_water_factor=2,
-						max_water_factor=5, from_neaps=True):
-	neap_dir = NeapDirection(cycle_length, from_neaps)
+						time_delta=datetime.timedelta(hours=6, minutes=0), start_life_cycle=TideHeight.HW,
+						min_water_factor=2, max_water_factor=5, go_towards_springs=True, start_days_after_neaps=None):
+
+	tide_days = []
+	tide_heights = []
+	old_a_date = start_date
+	current_life_cycle = start_life_cycle
+
+	if cycle_length > 0:
+		heights_count = cycle_length * 4
+
+	neap_dir = NeapDirection(cycle_length=cycle_length,
+							 tide_range_should_increase=go_towards_springs,
+							 start_days_after_neaps=start_days_after_neaps)
 	neap_level = neap_dir.get_start()
 
 	compute_current_height = semidiurnal_tide(
@@ -102,14 +137,6 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 		max_water_factor=max_water_factor,
 		neap_factor=neap_level
 	)
-
-	tide_days = []
-	tide_heights = []
-	old_a_date = start_date
-	current_life_cycle = life_cycle
-
-	if cycle_length > 0:
-		heights_count = cycle_length * 4
 
 	neaps_cycle_count = 0
 	old_neap_level = neap_level
@@ -135,6 +162,7 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 		neaps_cycle_count += 1
 		if neaps_cycle_count == 2:
 			neap_level = neap_dir.get_next(neap_level)
+			print('[DEBUG]', 'neap_level', neap_level)
 			compute_current_height = semidiurnal_tide(
 				min_water_factor=min_water_factor,
 				max_water_factor=max_water_factor,
@@ -142,7 +170,10 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 			)
 			neaps_cycle_count = 0
 
-		start_date = start_date + delta
+			if neap_dir.is_at_end(neap_level):
+				neap_dir.reverse()
+
+		start_date = start_date + time_delta
 
 		if start_date.day != old_a_date.day:
 			day_neap_level = neap_level
@@ -198,6 +229,8 @@ def compute_springs_mean(tide_days):
 			height2 = tide_day.heights[n - 2].height
 			springs_mean_values.append(abs(height1 - height2))
 			break
+	if len(springs_mean_values) == 0:
+		return None
 	return sum(springs_mean_values) / len(springs_mean_values)
 
 
@@ -209,4 +242,6 @@ def compute_neaps_mean(tide_days):
 			height2 = tide_day.heights[1].height
 			neaps_mean_values.append(abs(height1 - height2))
 			break
+	if len(neaps_mean_values) == 0:
+		return None
 	return sum(neaps_mean_values) / len(neaps_mean_values)
