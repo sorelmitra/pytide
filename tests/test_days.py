@@ -97,7 +97,7 @@ def check_water_levels(*, tide_day, tide_life_cycle, predicate=lambda height1, h
 				prev_tide_value = tide_value
 			else:
 				print(
-					f"HW height for day {tide_day.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
+					f"{tide_life_cycle} height for day {tide_day.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
 				assert predicate(tide_value.height, prev_tide_value.height)
 				prev_tide_value = tide_value
 	print()
@@ -205,7 +205,7 @@ def test_generate_range_increases_and_then_decreases():
 
 	first_neap_level = tide_days[0].neap_level
 
-	# We start from the fifth offset from neaps
+	# We start from the fifth day after neaps
 	offset_neap_level = NEAP_MAX - 4 * (NEAP_MAX / 17)
 	assert first_neap_level - offset_neap_level < 0.1
 
@@ -256,3 +256,70 @@ def test_generate_range_increases_and_then_decreases():
 
 	assert compute_neaps_mean(tide_days) is None
 
+
+def test_generate_range_decreases_and_then_increases():
+	delta = datetime.timedelta(hours=6, minutes=20)
+	tide_days = generate_tide_cycle(
+		start_date=(reset_day() + datetime.timedelta(hours=3, minutes=10)),
+		heights_count=0,
+		cycle_length=9,
+		time_delta=delta,
+		go_towards_springs=False,
+		start_days_after_neaps=6)
+	assert len(tide_days) == 9
+
+	first_neap_level = tide_days[0].neap_level
+
+	# We start from the seventh day after neaps
+	offset_neap_level = NEAP_MAX - 6 * (NEAP_MAX / 17)
+	assert first_neap_level - offset_neap_level < 0.1
+
+	# Tide height range should decrease until reaching Neaps
+	old_neap_level = first_neap_level - 1
+	for index in range(0, 6):
+		tide_day = tide_days[index]
+
+		# check that neap levels are increasing
+		print(f"Neap level for day {tide_day.date.day} is {tide_day.neap_level}")
+		assert tide_day.neap_level > old_neap_level
+		old_neap_level = tide_day.neap_level
+
+		# check that high water levels are decreasing
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.HW,
+						   predicate=lambda h1, h2: h1 < h2 - 0.04)
+
+		# check that low water levels are increasing
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.LW,
+						   predicate=lambda h1, h2: h1 > h2 + 0.01)
+
+	# We have reached Neaps
+	# Above and below, we skip the tests for day 7 (tide_days[6])
+	# because tide changes right in the middle of the day and our
+	# check_water_levels function is not prepared to handle that
+	middle_neap_level = tide_days[6].neap_level
+	assert middle_neap_level == NEAP_MAX
+
+	# From Neaps, tide height range should decrease
+	for index in range(7, len(tide_days)):
+		tide_day = tide_days[index]
+
+		# check that neap levels are decreasing
+		print(f"Neap level for day {tide_day.date.day} is {tide_day.neap_level}")
+		assert tide_day.neap_level < old_neap_level
+		old_neap_level = tide_day.neap_level
+
+		# check that high water levels are increasing
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.HW,
+						   predicate=lambda h1, h2: h1 > h2 + 0.04)
+
+		# check that low water levels are decreasing
+		check_water_levels(tide_day=tide_day, tide_life_cycle=TideHeight.LW,
+						   predicate=lambda h1, h2: h1 < h2 - 0.008)
+
+	assert compute_max_hw(tide_days) == systest_get_hw(tide_days=tide_days, day_number=1, first=True)
+	assert compute_max_lw(tide_days) == systest_get_lw(tide_days=tide_days, day_number=7, first=False)
+
+	assert compute_springs_mean(tide_days) is None
+
+	expected_neaps_height = systest_get_mean_ht(tide_days=tide_days, day_number=7)
+	assert abs(compute_neaps_mean(tide_days) - expected_neaps_height) < 0.1

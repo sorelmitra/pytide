@@ -58,7 +58,7 @@ class NeapDirection:
 		self.start_from_offset = 0
 		if start_days_after_neaps is not None:
 			self.start_from_offset = start_days_after_neaps * 2
-		print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
+		# print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
 
 	@staticmethod
 	def get_max():
@@ -98,7 +98,7 @@ class NeapDirection:
 
 	def reverse(self):
 		self.tide_range_should_increase = not self.tide_range_should_increase
-		print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
+		# print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
 		pass
 
 
@@ -159,27 +159,31 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 		else:
 			tide_hour = 6
 
+		start_date = start_date + time_delta
+
 		neaps_cycle_count += 1
 		if neaps_cycle_count == 2:
 			neap_level = neap_dir.get_next(neap_level)
-			print('[DEBUG]', 'neap_level', neap_level)
 			compute_current_height = semidiurnal_tide(
 				min_water_factor=min_water_factor,
 				max_water_factor=max_water_factor,
 				neap_factor=neap_level
 			)
 			neaps_cycle_count = 0
-
 			if neap_dir.is_at_end(neap_level):
+				old_neap_level = neap_level
 				neap_dir.reverse()
-
-		start_date = start_date + time_delta
+			# print('[DEBUG]', 'neap_level', neap_level, 'start_date', start_date)
 
 		if start_date.day != old_a_date.day:
 			day_neap_level = neap_level
-			if len(tide_days) < 1:
+			# old_neap_level is used for day 1 to make sure we start from the
+			# actual Neaps or Springs level
+			# also used when Neaps or Springs is in the middle of the generated array
+			if old_neap_level is not None:
 				day_neap_level = old_neap_level
-				old_neap_level = neap_level
+				old_neap_level = None
+			# print('[DEBUG]', f"Adding new day, neap_level: {day_neap_level}")
 			tide_day = TideDay(
 				compute_height=compute_current_height,
 				tide_date=old_a_date.date(),
