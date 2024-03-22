@@ -44,24 +44,27 @@ def generate_random_time_between_tides(*, tide_days, day_number, tide_number):
 	return random_datetime.time()
 
 
-def time_to_float(t):
+def timedelta_to_twelve_based_tide_hours(td):
 	"""
-	Converts a `datetime.time` object to a floating point number representing the hour since midnight.
-	Seconds and microseconds are ignored.
+	Converts a datetime.timedelta object to a floating point number representing tide hours.
+	Tide hours run between 0 and 12, with 0 representing the first low water of the interval, 6 representing the high water, and 12 representing the second low water.
 
 	Parameters:
-	- t: `datetime.time` object.
+	- td: datetime.timedelta object.
 
 	Returns:
-	- float: The hour since midnight as a floating point number.
+	- float: The number of tide 12-based hours represented by the timedelta, including fractional parts.
 	"""
-	# Extract hours and minutes
-	hours = t.hour
-	minutes = t.minute
+	total_seconds = td.total_seconds()
+	hours = total_seconds / 3600  # Convert seconds to hours
 
-	# Convert the time to a floating point number
-	# Hours + (Minutes / 60) to convert minutes to a fraction of an hour
-	return hours + minutes / 60.0
+	# Convert to 12-based tide hours
+	hours += 6
+	if hours < 0:
+		hours += 6
+	if hours > 12:
+		hours -= 12
+	return hours
 
 
 class TideTimePosition:
@@ -74,16 +77,34 @@ class TideTimePosition:
 	- tide_number: The tide number within the day (1-based) of the tide time.
 	"""
 
-	def __init__(self, *, time, day_number, tide_number):
+	def __init__(self, *, time, day_number, tide_number, hw_diff):
 		self.time = time
 		self.day_number = day_number
 		self.tide_number = tide_number
+		self.hw_diff = hw_diff
+
+	def print(self):
+		print(f"Closest HW is at {self.time.strftime('%H%M')}, tide hour {self.get_hw_hour_string()}, tide number: {self.tide_number}")
+
+	def get_hw_hour_string(self):
+		total_seconds = int(self.hw_diff.total_seconds())
+		hours = total_seconds // 3600  # Divide by 3600 to get hours
+		minutes = (total_seconds % 3600) // 60  # Use modulus by 3600 to get remaining seconds, then divide by 60 to get minutes
+		if minutes > 30:
+			hours += 1
+		sign = ''
+		if hours > 0:
+			sign = '+'
+		hours_str = f"{sign}{hours}"
+		if hours == 0:
+			hours_str = ''
+		return f"HW{hours_str}"
 
 
-def find_closest_high_water(tide_days, day_number, given_time):
+def find_closest_high_water(*, tide_days, day_number, given_time):
 	min_time_diff = datetime.timedelta.max
 	closest_hw_time = TideTimePosition(
-		time=None, day_number=None, tide_number=None)
+		time=None, day_number=None, tide_number=None, hw_diff=None)
 	day_index = day_number - 1
 
 	# Helper function to update the closest HW tide based on a new candidate
@@ -96,15 +117,17 @@ def find_closest_high_water(tide_days, day_number, given_time):
 			day_of_reference += datetime.timedelta(days=1)
 		candidate_datetime = datetime.datetime.combine(day_of_reference, candidate_time)
 		given_datetime = datetime.datetime.combine(datetime.date.today(), given_time)
-		time_diff = abs(candidate_datetime - given_datetime)
-		print(f"Candidate: {candidate_datetime}, given: {given_datetime}, time diff: {time_diff}")
+		time_diff = given_datetime - candidate_datetime
+		abs_time_diff = abs(time_diff)
+		# print('[DEBUG]', f"Candidate: {candidate_datetime}, given: {given_datetime}, time diff: {abs_time_diff}")
 
-		if time_diff < min_time_diff:
-			min_time_diff = time_diff
+		if abs_time_diff < min_time_diff:
+			min_time_diff = abs_time_diff
 			closest_hw_time.time = candidate_time
 			closest_hw_time.day_number = candidate_day_number
 			closest_hw_time.tide_number = candidate_tide_number
-			print('Chosen')
+			closest_hw_time.hw_diff = time_diff
+			# print('[DEBUG]', 'Chosen')
 
 	# Search for the closest HW tide in the current, previous, and next day
 	for index_offset in (0, -1, 1):
@@ -121,7 +144,8 @@ def find_closest_high_water(tide_days, day_number, given_time):
 				step = 1
 			for k in range(start, stop, step):
 				tide = tide_days[current_day_index].heights[k]
-				tide_days[current_day_index].print()
+				# print('[DEBUG]')
+				# tide_days[current_day_index].print()
 				if tide.type == TideHeight.HW:
 					update_closest_hw(
 						candidate_time=tide.time, candidate_day_number=current_day_index + 1,

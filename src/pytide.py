@@ -1,6 +1,8 @@
 import datetime
 import random
 
+from src.tide_computations import generate_random_time_between_tides, find_closest_high_water, \
+	timedelta_to_twelve_based_tide_hours
 from src.tide_model import semidiurnal_tide, NEAP_MAX
 from src.tide_plot import plot_tide
 from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
@@ -17,16 +19,16 @@ if __name__ == '__main__':
 	print()
 	[tide.print() for tide in tide_days]
 
-	day = random.randint(0, len(tide_days) - 1)
-	tide = tide_days[day]
-
-	tide_hour = 1 + 11 * random.random()
-
-	tide_hour_per_hw = tide_hour - 6
-	hw_sign = '' if tide_hour_per_hw < 0 else '+'
-	hw_string = f"{hw_sign}{format(tide_hour_per_hw, '.1f')}" if abs(tide_hour_per_hw) >= 0.1 else ''
-	tide_height_string = format(tide.compute_height(tide_hour), '.1f')
-	print(f"Tide height for day {day + 1} at HW{hw_string}: {tide_height_string} m")
+	given_time = generate_random_time_between_tides(
+		tide_days=tide_days, day_number=4, tide_number=2)
+	closest_hw = find_closest_high_water(
+		tide_days=tide_days, day_number=4, given_time=given_time)
+	tide_day = tide_days[3]
+	twelve_based_time = timedelta_to_twelve_based_tide_hours(closest_hw.hw_diff)
+	tide_height = tide_day.compute_height(twelve_based_time)
+	tide_height_str = f"{tide_height:.1f} m"
+	print(f"On {tide_day.date.strftime('%B %d')}, at {given_time.strftime('%H%M')}, tide height is {tide_height_str}, 12-based tide-hour {twelve_based_time:.1f}")
+	closest_hw.print()
 
 	plot_tide(
 		springs_tide_func=(semidiurnal_tide()),
