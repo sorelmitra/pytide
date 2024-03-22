@@ -37,6 +37,15 @@ def sample_tide_days():
 				TideHeight(time=datetime.time(22, 0), height=1.5, life_cycle=TideHeight.LW),
 			]
 		),
+		TideDay(
+			tide_date=datetime.date(2024, 1, 4),
+			heights=[
+				TideHeight(time=datetime.time(3, 30), height=2.5, life_cycle=TideHeight.LW),
+				TideHeight(time=datetime.time(9, 50), height=1.0, life_cycle=TideHeight.HW),
+				TideHeight(time=datetime.time(16, 10), height=2.0, life_cycle=TideHeight.LW),
+				TideHeight(time=datetime.time(22, 30), height=1.5, life_cycle=TideHeight.HW),
+			]
+		),
 	]
 
 
@@ -48,6 +57,16 @@ def test_closest_hw_same_day(sample_tide_days):
 	assert closest_hw.day_number == 2
 	assert closest_hw.tide_number == 3
 	assert closest_hw.hw_diff == datetime.timedelta(days=0) - datetime.timedelta(hours=3)
+
+
+def test_closest_hw_same_day_four(sample_tide_days):
+	given_time = datetime.time(16, 24)
+	closest_hw = find_closest_high_water(
+		tide_days=sample_tide_days, day_number=4, given_time=given_time)
+	assert closest_hw.time == datetime.time(22, 30)
+	assert closest_hw.day_number == 4
+	assert closest_hw.tide_number == 4
+	assert closest_hw.hw_diff == datetime.timedelta(days=0) - datetime.timedelta(hours=6, minutes=6)
 
 
 def test_closest_hw_previous_day(sample_tide_days):

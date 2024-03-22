@@ -19,11 +19,12 @@ if __name__ == '__main__':
 	print()
 	[tide.print() for tide in tide_days]
 
+	day_number = 2
 	given_time = generate_random_time_between_tides(
-		tide_days=tide_days, day_number=4, tide_number=2)
+		tide_days=tide_days, day_number=day_number, tide_number=3)
 	closest_hw = find_closest_high_water(
-		tide_days=tide_days, day_number=4, given_time=given_time)
-	tide_day = tide_days[3]
+		tide_days=tide_days, day_number=day_number, given_time=given_time)
+	tide_day = tide_days[day_number - 1]
 	tide_value = tide_day.heights[closest_hw.tide_number - 1]
 	twelve_based_time = timedelta_to_twelve_based_tide_hours(closest_hw.hw_diff)
 	tide_height = tide_value.compute_height(twelve_based_time)
