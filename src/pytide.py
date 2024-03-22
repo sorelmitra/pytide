@@ -21,8 +21,8 @@ if __name__ == '__main__':
 	tide = tide_days[day]
 
 	tide_hour = 1 + 11 * random.random()
-	tide_hour_per_hw = tide_hour - 6
 
+	tide_hour_per_hw = tide_hour - 6
 	hw_sign = '' if tide_hour_per_hw < 0 else '+'
 	hw_string = f"{hw_sign}{format(tide_hour_per_hw, '.1f')}" if abs(tide_hour_per_hw) >= 0.1 else ''
 	tide_height_string = format(tide.compute_height(tide_hour), '.1f')
