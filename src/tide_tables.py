@@ -15,6 +15,8 @@ class TideHeight:
 	# @param time: the time of the tide height, a datetime.time() object
 	# @param height: the height of the tide, a float number representing meters
 	# @param life_cycle: the type of tide height (high or low water)
+	# @param neap_level: the neap level of the tide, a float number between 0 (springs) and NEAP_MAX (neaps)
+	# @param compute_height: the function that computes the tide height
 	def __init__(self, *,
 				 time=datetime.datetime.now().time(), height=0.0, life_cycle=LW,
 				 neap_level=0.0,
