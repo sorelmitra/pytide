@@ -201,12 +201,12 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 				neap_level=day_neap_level,
 				heights=tide_heights
 			)
-			# print('[DEBUG]', f"Adding new day, neap_level: {day_neap_level}, values")
-			# tide_day.print()
 			tide_days.append(tide_day)
 			tide_heights = []
 			old_a_date = start_date
 			day_index += 1
+			# print('[DEBUG]', f"Adding new day #{day_index}, neap_level: {day_neap_level}, values")
+			# tide_day.print()
 
 		if (days_count > 0) and (day_index == days_count):
 			break
