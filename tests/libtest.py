@@ -37,3 +37,20 @@ def systest_get_mean_ht(*, tide_days, day_number):
 	first_springs_height = systest_get_first_ht(tide_days=tide_days, day_number=day_number)
 	last_springs_height = systest_get_last_ht(tide_days=tide_days, day_number=day_number)
 	return (first_springs_height + last_springs_height) / 2
+
+
+def check_water_levels(
+		*, tide_day, tide_life_cycle,
+		predicate=lambda current_ht, previous_ht: current_ht == previous_ht):
+	prev_tide_value = None
+	for tide_value in tide_day.heights:
+		if tide_value.type == tide_life_cycle:
+			if prev_tide_value is None:
+				prev_tide_value = tide_value
+			else:
+				print(
+					f"{tide_life_cycle} height for day {tide_day.date.day}, time {tide_value.time.strftime('%H%M')} is {format(tide_value.height, '.2f')}, previous was time {prev_tide_value.time.strftime('%H%M')} {format(prev_tide_value.height, '.2f')}")
+				assert predicate(tide_value.height,
+								 prev_tide_value.height)
+				prev_tide_value = tide_value
+	print()

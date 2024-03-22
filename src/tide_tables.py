@@ -102,10 +102,16 @@ class NeapDirection:
 		pass
 
 
-# Generates a list of tide days, representing a full tide cycle
-# from neaps to springs or vice-versa
+# Generates a list of tide days with heights and times, starting from
+# a specified date and neap level.
+# As the tide heights are added, neap level progresses in the indicated
+# direction (towards springs or neaps).
+# As a Springs or Neaps is reached, direction is reversed and the cycle
+# continues for the number of days to generate.
+#
 # @param start_date: the date of the tide, a datetime object
 # @param heights_count: the number of heights to generate
+# @param days_count: the number of days to generate; if missing, it defaults to cycle_length
 # @param cycle_length: the number of days in a neaps - springs cycle; if present, it overrides
 # heights_count and generates a full cycle
 # @param time_delta: the time difference between heights
@@ -115,17 +121,22 @@ class NeapDirection:
 # @param go_towards_springs: a boolean value that indicates
 # if the tide range should initially increase (i.e. progress towards springs),
 # or decrease (i.e. progress towards neaps)
-def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cycle_length=0,
-						time_delta=datetime.timedelta(hours=6, minutes=0), start_life_cycle=TideHeight.HW,
-						min_water_factor=2, max_water_factor=5, go_towards_springs=True, start_days_after_neaps=None):
+def generate_tide_days(start_date=datetime.datetime.now(),
+					   days_count=0, heights_count=1, cycle_length=0,
+					   time_delta=datetime.timedelta(hours=6, minutes=0),
+					   start_life_cycle=TideHeight.HW,
+					   min_water_factor=2, max_water_factor=5, go_towards_springs=True,
+					   start_days_after_neaps=None):
 
 	tide_days = []
 	tide_heights = []
 	old_a_date = start_date
 	current_life_cycle = start_life_cycle
 
-	if cycle_length > 0:
-		heights_count = cycle_length * 4
+	if days_count == 0:
+		days_count = cycle_length
+	if days_count > 0:
+		heights_count = days_count * 4
 
 	neap_dir = NeapDirection(cycle_length=cycle_length,
 							 tide_range_should_increase=go_towards_springs,
@@ -142,6 +153,7 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 	old_neap_level = neap_level
 	tide_hour = 6 if current_life_cycle == TideHeight.HW else 0
 	old_low_tide_hour = 12 if tide_hour == 6 else 0
+	day_index = 0
 	for _ in range(0, heights_count):
 		tide_height = TideHeight(
 			time=start_date.time(),
@@ -183,24 +195,31 @@ def generate_tide_cycle(start_date=datetime.datetime.now(), heights_count=1, cyc
 			if old_neap_level is not None:
 				day_neap_level = old_neap_level
 				old_neap_level = None
-			# print('[DEBUG]', f"Adding new day, neap_level: {day_neap_level}")
 			tide_day = TideDay(
 				compute_height=compute_current_height,
 				tide_date=old_a_date.date(),
 				neap_level=day_neap_level,
 				heights=tide_heights
 			)
+			# print('[DEBUG]', f"Adding new day, neap_level: {day_neap_level}, values")
+			# tide_day.print()
 			tide_days.append(tide_day)
 			tide_heights = []
 			old_a_date = start_date
+			day_index += 1
 
-	if (cycle_length == 0 or len(tide_days) < cycle_length) and len(tide_heights) > 0:
+		if (days_count > 0) and (day_index == days_count):
+			break
+
+	if (days_count == 0 or len(tide_days) < days_count) and len(tide_heights) > 0:
 		tide_day = TideDay(
 			compute_height=compute_current_height,
 			tide_date=start_date.date(),
 			neap_level=neap_level,
 			heights=tide_heights
 		)
+		# print('[DEBUG]', f"Adding last day, neap_level: {neap_level}, values")
+		# tide_day.print()
 		tide_days.append(tide_day)
 
 	return tide_days
