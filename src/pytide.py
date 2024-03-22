@@ -24,8 +24,9 @@ if __name__ == '__main__':
 	closest_hw = find_closest_high_water(
 		tide_days=tide_days, day_number=4, given_time=given_time)
 	tide_day = tide_days[3]
+	tide_value = tide_day.heights[closest_hw.tide_number - 1]
 	twelve_based_time = timedelta_to_twelve_based_tide_hours(closest_hw.hw_diff)
-	tide_height = tide_day.compute_height(twelve_based_time)
+	tide_height = tide_value.compute_height(twelve_based_time)
 	tide_height_str = f"{tide_height:.1f} m"
 	print(f"On {tide_day.date.strftime('%B %d')}, at {given_time.strftime('%H%M')}, tide height is {tide_height_str}, 12-based tide-hour {twelve_based_time:.1f}")
 	closest_hw.print()
