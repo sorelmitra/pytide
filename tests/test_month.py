@@ -8,7 +8,7 @@ from tests.libtest import systest_get_hw, systest_get_lw, \
 	systest_get_mean_ht, check_water_levels
 
 
-def test_generate_two_neaps_two_springs_with_variations():
+def test_generate_two_neaps_two_springs():
 	delta = datetime.timedelta(hours=6, minutes=20)
 	tide_days = generate_tide_days(
 		start_date=(reset_day() + datetime.timedelta(hours=3, minutes=10)),
@@ -136,3 +136,60 @@ def test_generate_two_neaps_two_springs_with_variations():
 
 	expected_neaps_height = systest_get_mean_ht(tide_days=tide_days, day_number=7)
 	assert abs(compute_neaps_mean(tide_days) - expected_neaps_height) < 0.1
+
+
+def test_generate_four_neaps_four_springs_has_variations():
+	delta = datetime.timedelta(hours=6, minutes=20)
+	tide_days = generate_tide_days(
+		start_date=(reset_day() + datetime.timedelta(hours=3, minutes=10)),
+		heights_count=0,
+		days_count=67,
+		cycle_length=8, time_delta=delta,
+		go_towards_springs=False,
+		start_days_after_neaps=6,
+		should_vary_water_factors=True)
+	assert len(tide_days) == 67
+
+	first_neaps_hw = systest_get_hw(tide_days=tide_days, day_number=7, first=True)
+	first_neaps_lw = systest_get_lw(tide_days=tide_days, day_number=7, first=True)
+
+	first_springs_hw = systest_get_hw(tide_days=tide_days, day_number=15, first=True)
+	first_springs_lw = systest_get_lw(tide_days=tide_days, day_number=15, first=True)
+
+	second_neaps_hw = systest_get_hw(tide_days=tide_days, day_number=23, first=True)
+	second_neaps_lw = systest_get_lw(tide_days=tide_days, day_number=23, first=True)
+
+	second_springs_hw = systest_get_hw(tide_days=tide_days, day_number=30, first=True)
+	second_springs_lw = systest_get_lw(tide_days=tide_days, day_number=30, first=True)
+
+	third_neaps_hw = systest_get_hw(tide_days=tide_days, day_number=38, first=True)
+	third_neaps_lw = systest_get_lw(tide_days=tide_days, day_number=38, first=True)
+
+	third_springs_hw = systest_get_hw(tide_days=tide_days, day_number=46, first=True)
+	third_springs_lw = systest_get_lw(tide_days=tide_days, day_number=46, first=True)
+
+	fourth_neaps_hw = systest_get_hw(tide_days=tide_days, day_number=54, first=True)
+	fourth_neaps_lw = systest_get_lw(tide_days=tide_days, day_number=54, first=True)
+
+	fourth_springs_hw = systest_get_hw(tide_days=tide_days, day_number=62, first=True)
+	fourth_springs_lw = systest_get_lw(tide_days=tide_days, day_number=62, first=True)
+
+	assert 0.05 < abs(first_neaps_hw - second_neaps_hw) < 0.3
+	assert 0.05 < abs(first_neaps_lw - second_neaps_lw) < 0.3
+	assert 0.05 < abs(first_springs_hw - second_springs_hw) < 0.3
+	assert 0.05 < abs(first_springs_lw - second_springs_lw) < 0.3
+
+	assert 0.05 < abs(second_neaps_hw - third_neaps_hw) < 0.3
+	assert 0.05 < abs(second_neaps_lw - third_neaps_lw) < 0.3
+	assert 0.05 < abs(second_springs_hw - third_springs_hw) < 0.3
+	assert 0.05 < abs(second_springs_lw - third_springs_lw) < 0.3
+
+	assert 0.05 < abs(third_neaps_hw - fourth_neaps_hw) < 0.3
+	assert 0.0 <= abs(third_neaps_lw - fourth_neaps_lw) <= 0.0 # some values are equal
+	assert 0.05 < abs(third_springs_hw - fourth_springs_hw) < 0.3
+	assert 0.05 < abs(third_springs_lw - fourth_springs_lw) < 0.3
+
+	assert abs(first_neaps_hw - fourth_neaps_hw) < 0.4
+	assert abs(first_neaps_lw - fourth_neaps_lw) < 0.4
+	assert abs(first_springs_hw - fourth_springs_hw) < 0.4
+	assert abs(first_springs_lw - fourth_springs_lw) < 0.4

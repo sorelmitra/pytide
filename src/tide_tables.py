@@ -126,12 +126,15 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 					   time_delta=datetime.timedelta(hours=6, minutes=0),
 					   start_life_cycle=TideHeight.HW,
 					   min_water_factor=2, max_water_factor=5, go_towards_springs=True,
-					   start_days_after_neaps=None):
+					   start_days_after_neaps=None,
+					   should_vary_water_factors=False):
 
 	tide_days = []
 	tide_heights = []
 	old_a_date = start_date
 	current_life_cycle = start_life_cycle
+	reversal_count = 0  # Counter for the number of reversals
+	increase_factors = True  # Direction of adjustment, True for increase, False for decrease
 
 	if days_count == 0:
 		days_count = cycle_length
@@ -185,6 +188,20 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 			if neap_dir.is_at_end(neap_level):
 				old_neap_level = neap_level
 				neap_dir.reverse()
+
+				if should_vary_water_factors:
+					reversal_count += 1
+
+					# Adjust the factors based on the current phase and reversal count
+					if reversal_count % 3 == 0:  # Change direction after every 3 reversals
+						increase_factors = not increase_factors
+
+					adjustment_min_abs = 0.04
+					adjustment_min = adjustment_min_abs if increase_factors else -adjustment_min_abs
+					adjustment_max_abs = 0.06
+					adjustment_max = adjustment_max_abs if increase_factors else -adjustment_max_abs
+					min_water_factor += adjustment_min
+					max_water_factor += adjustment_max
 			# print('[DEBUG]', 'neap_level', neap_level, 'start_date', start_date)
 
 		if start_date.day != old_a_date.day:
@@ -205,8 +222,8 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 			tide_heights = []
 			old_a_date = start_date
 			day_index += 1
-			# print('[DEBUG]', f"Adding new day #{day_index}, neap_level: {day_neap_level}, values")
-			# tide_day.print()
+			print('[DEBUG]', f"Adding new day #{day_index}, neap_level: {day_neap_level}, values")
+			tide_day.print()
 
 		if (days_count > 0) and (day_index == days_count):
 			break
