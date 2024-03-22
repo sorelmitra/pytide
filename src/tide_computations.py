@@ -8,29 +8,39 @@ def generate_random_time_between_tides(*, tide_days, day_number, tide_number):
 	day_index = day_number - 1
 	tide_index = tide_number - 1
 
-	# Validate inputs
-	if day_index >= len(tide_days) or day_index < 0:
-		raise ValueError(f"day_number {day_number} is out of range.")
+	# Retrieve the specific TideDay
 	tide_day = tide_days[day_index]
-
-	if tide_index >= len(tide_day.heights) or tide_index < 0:
-		raise ValueError(f"tide_number {tide_number} is out of range.")
-
+	# Retrieve the tide height entry
 	current_tide = tide_day.heights[tide_index]
 
-	# Handle the last tide of the day
+	# Determine next tide
 	if tide_index + 1 < len(tide_day.heights):
+		# The next tide is later the same day
 		next_tide = tide_day.heights[tide_index + 1]
+		next_tide_day = tide_day
+	elif day_index + 1 < len(tide_days):
+		# The next tide is the first tide of the next day
+		next_tide_day = tide_days[day_index + 1]
+		next_tide = next_tide_day.heights[0]
 	else:
+		# If it's the last tide of the last day in the array, use a default end time (e.g., 23:59)
+		next_tide_day = tide_day  # No next day, so default to the current day
 		next_tide = TideHeight(time=datetime.time(23, 59))
 
-	current_tide_datetime = datetime.datetime.combine(
-		tide_day.date, current_tide.time)  # Assuming tide_day.date exists
-	next_tide_datetime = datetime.datetime.combine(
-		tide_day.date, next_tide.time)  # Adjust accordingly
+	# Convert tide times to datetime.datetime objects for easy manipulation
+	current_tide_datetime = datetime.datetime.combine(tide_day.date, current_tide.time)
+	next_tide_datetime = datetime.datetime.combine(next_tide_day.date, next_tide.time)
 
-	random_datetime = current_tide_datetime + (
-				next_tide_datetime - current_tide_datetime) * random.random()
+	# Generate a random datetime between the current tide and the next
+	if next_tide_datetime > current_tide_datetime:
+		random_datetime = current_tide_datetime + (
+					next_tide_datetime - current_tide_datetime) * random.random()
+	else:
+		# If next tide datetime is not greater (due to defaulting to 23:59), adjust logic as needed
+		# For simplicity, we default to current_tide_datetime for now
+		random_datetime = current_tide_datetime
+
+	# Return the time part of the random datetime
 	return random_datetime.time()
 
 
