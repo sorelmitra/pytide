@@ -1,14 +1,25 @@
+import argparse
 import datetime
 import random
 
+from src.lib import set_log_level, LogLevel
 from src.tide_computations import generate_random_time_between_tides, find_closest_high_water, \
-	timedelta_to_twelve_based_tide_hours
+	timedelta_to_twelve_based_tide_hours, determine_water_height_intervals, TideConstraints
 from src.tide_model import semidiurnal_tide, NEAP_MAX
 from src.tide_plot import plot_tide
 from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
 	compute_max_lw
 
 if __name__ == '__main__':
+	ap = argparse.ArgumentParser(
+		description="PyTide: Generate realistic tide tables, curves.  "
+					"Solve common tide problems")
+	ap.add_argument("-v", help="Be more verbose, helps debugging problems")
+	args = ap.parse_args()
+	set_log_level(LogLevel.INFO)
+	if args.v:
+		set_log_level(LogLevel.DEBUG)
+
 	cycle_length = random.randint(7, 9)
 	start_date = reset_day() + datetime.timedelta(hours=3, minutes=10)
 	tide_days = generate_tide_days(start_date=start_date, cycle_length=cycle_length,
@@ -31,6 +42,12 @@ if __name__ == '__main__':
 	tide_height_str = f"{tide_height:.1f} m"
 	print(f"On {tide_day.date.strftime('%B %d')}, at {given_time.strftime('%H%M')}, tide height is {tide_height_str}, 12-based tide-hour {twelve_based_time:.1f}")
 	closest_hw.print()
+
+	intervals = determine_water_height_intervals(
+		tide_days=tide_days, day_number=2, tide_number=3,
+		constraint=TideConstraints.MIN, height_to_find=4.3)
+	print(f"Intervals during which tide is at least 4.3 m:")
+	[interval.print() for interval in intervals]
 
 	plot_tide(
 		springs_tide_func=(semidiurnal_tide()),

@@ -1,5 +1,6 @@
 import datetime
 
+from src.lib import debug, debug_func
 from src.tide_model import NEAP_MAX, semidiurnal_tide
 
 
@@ -66,7 +67,7 @@ class NeapDirection:
 		self.start_from_offset = 0
 		if start_days_after_neaps is not None:
 			self.start_from_offset = start_days_after_neaps * 2
-		# print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
+		debug(f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
 
 	@staticmethod
 	def get_max():
@@ -106,7 +107,7 @@ class NeapDirection:
 
 	def reverse(self):
 		self.tide_range_should_increase = not self.tide_range_should_increase
-		# print('[DEBUG]', f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
+		debug(f"step: {self.step}, start_from_offset: {self.start_from_offset}, tide_range_should_increase: {self.tide_range_should_increase}")
 		pass
 
 
@@ -212,7 +213,7 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 					adjustment_max = adjustment_max_abs if increase_factors else -adjustment_max_abs
 					min_water_factor += adjustment_min
 					max_water_factor += adjustment_max
-			# print('[DEBUG]', 'neap_level', neap_level, 'start_date', start_date)
+			debug(f"neap_level: {neap_level:.2f}, start_date: {start_date}")
 
 		if start_date.day != old_a_date.day:
 			day_neap_level = neap_level
@@ -231,8 +232,8 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 			tide_heights = []
 			old_a_date = start_date
 			day_index += 1
-			# print('[DEBUG]', f"Adding new day #{day_index}, neap_level: {day_neap_level}, values")
-			# tide_day.print()
+			debug(f"Adding new day #{day_index}, neap_level: {day_neap_level:.2f}, values")
+			debug_func(tide_day.print)
 
 		if (days_count > 0) and (day_index == days_count):
 			break
@@ -243,8 +244,8 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 			neap_level=neap_level,
 			heights=tide_heights
 		)
-		# print('[DEBUG]', f"Adding last day, neap_level: {neap_level}, values")
-		# tide_day.print()
+		debug(f"Adding last day, neap_level: {neap_level:.2f}, values")
+		debug_func(tide_day.print)
 		tide_days.append(tide_day)
 
 	return tide_days

@@ -1,6 +1,7 @@
 import datetime
 import random
 
+from src.lib import debug, get_log_level, debug_func
 from src.tide_tables import TideHeight, TideDay
 
 
@@ -120,7 +121,7 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 		given_datetime = datetime.datetime.combine(datetime.date.today(), given_time)
 		time_diff = given_datetime - candidate_datetime
 		abs_time_diff = abs(time_diff)
-		# print('[DEBUG]', f"Candidate: {candidate_datetime}, given: {given_datetime}, time diff: {abs_time_diff}")
+		debug(f"Candidate: {candidate_datetime}, given: {given_datetime}, time diff: {abs_time_diff}")
 
 		if abs_time_diff < min_time_diff:
 			min_time_diff = abs_time_diff
@@ -129,7 +130,7 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 				day_number=candidate_day_number,
 				tide_number=candidate_tide_number,
 				hw_diff=time_diff)
-			# print('[DEBUG]', 'Chosen')
+			debug('Chosen')
 
 	# Search for the closest HW tide in the current, previous, and next day
 	for index_offset in (0, -1, 1):
@@ -146,8 +147,8 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 				step = 1
 			for k in range(start, stop, step):
 				tide = tide_days[current_day_index].heights[k]
-				# print('[DEBUG]')
-				# tide_days[current_day_index].print()
+				debug()
+				debug_func(tide_days[current_day_index].print)
 				if tide.type == TideHeight.HW:
 					update_closest_hw(
 						candidate_time=tide.time, candidate_day_number=current_day_index + 1,
@@ -168,10 +169,17 @@ class TideConstraints:
 		self.day_number = day_number
 		self.time = time
 
+	def print(self):
+		print(f"Day number: {self.day_number}, time: {self.time}")
+
+
 class TideInterval:
 	def __init__(self, *, start: TideConstraints, end: TideConstraints):
 		self.start = start
 		self.end = end
+
+	def print(self):
+		print(f"[{self.start.time} - {self.end.time}]")
 
 
 def find_previous_tide(*, tide_days: list[TideDay], day_number: int, tide_number: int):
@@ -247,7 +255,7 @@ def find_height_time_between_tides(*, height_to_find: float,
 	start_date = datetime.date.today()
 	end_date = start_date + datetime.timedelta(
 		days=second_tide_day_number - first_tide_day_number)
-	print('[DEBUG]', f"Start date: {start_date}, end date: {end_date}, First tide day number: {first_tide_day_number}, Second tide day number: {second_tide_day_number}")
+	debug(f"Start date: {start_date}, end date: {end_date}, First tide day number: {first_tide_day_number}, Second tide day number: {second_tide_day_number}")
 
 	start_time = datetime.datetime.combine(start_date, first_tide.time)
 	end_time = datetime.datetime.combine(end_date, second_tide.time)
@@ -267,26 +275,22 @@ def find_height_time_between_tides(*, height_to_find: float,
 	start_height = hw.compute_height(start_time_12_hours)
 	end_height = hw.compute_height(end_time_12_hours)
 
-	print('[DEBUG]', f"First tide")
-	first_tide.print()
-	print('[DEBUG]', f"Second tide")
-	second_tide.print()
+	debug(f"First tide")
+	debug_func(first_tide.print)
+	debug(f"Second tide")
+	debug_func(second_tide.print)
 
-	print('[DEBUG]', f"Start time: {start_time}, end time: {end_time}")
-	print('[DEBUG]',
-		  f"12-hours-based: Start time: {start_time_12_hours:.1f}, end time: {end_time_12_hours:.1f}")
-	print('[DEBUG]', f"Start height: {start_height:.1f}, end height: {end_height:.1f}")
+	debug(f"Start time: {start_time}, end time: {end_time}")
+	debug(f"12-hours-based: Start time: {start_time_12_hours:.1f}, end time: {end_time_12_hours:.1f}")
+	debug(f"Start height: {start_height:.1f}, end height: {end_height:.1f}")
 
 	while (end_time - start_time) > datetime.timedelta(minutes=1):  # Precision threshold
 		mid_time = start_time + (end_time - start_time) / 2
 		mid_time_12_hours = start_time_12_hours + (end_time_12_hours - start_time_12_hours) / 2
-		print('[DEBUG]',
-			  f"Start time: {start_time}, end time: {end_time}, mid time: {mid_time}")
-		print('[DEBUG]',
-			  f"12-hours-based start time: {start_time_12_hours:.1f}, end time: {end_time_12_hours:.1f}, mid time: {mid_time_12_hours:.1f}")
+		debug(f"Start time: {start_time}, end time: {end_time}, mid time: {mid_time}")
+		debug(f"12-hours-based start time: {start_time_12_hours:.1f}, end time: {end_time_12_hours:.1f}, mid time: {mid_time_12_hours:.1f}")
 		mid_height = hw.compute_height(mid_time_12_hours)
-		print('[DEBUG]',
-			  f"Start height: {start_height:.1f}, end height: {end_height:.1f}, mid height: {mid_height:.1f}")
+		debug(f"Start height: {start_height:.1f}, end height: {end_height:.1f}, mid height: {mid_height:.1f}")
 
 		if (mid_height < height_to_find and start_height < end_height) or (
 				mid_height > height_to_find and start_height > end_height):
@@ -302,7 +306,7 @@ def find_height_time_between_tides(*, height_to_find: float,
 	start_day_number = first_tide_day_number
 	if start_time.day > start_date.day:
 		start_day_number += start_time.day - start_date.day
-	# print('[DEBUG]', f"Start day number: {start_day_number}, Start time: {start_time}, End time: {end_time}")
+	debug(f"Start day number: {start_day_number}, Start time: {start_time}, End time: {end_time}")
 
 	return start_day_number, start_time
 
@@ -339,7 +343,7 @@ def determine_water_height_intervals(constraint,
 			life_cycle=prev_tide.type,
 			neap_level=prev_tide.neap_level,
 			compute_height=prev_tide.compute_height)
-		print('[DEBUG]', f"Fake next tide: {next_tide.time}")
+		debug(f"Fake next tide: {next_tide.time}")
 
 	if prev_tide is None:
 		# We are at the start of the tidal data
@@ -352,7 +356,7 @@ def determine_water_height_intervals(constraint,
 			life_cycle=next_tide.type,
 			neap_level=next_tide.neap_level,
 			compute_height=next_tide.compute_height)
-		print('[DEBUG]', f"Fake previous tide: {prev_tide.time}")
+		debug(f"Fake previous tide: {prev_tide.time}")
 
 	# Find the first time corresponding to the given height
 	start_day_number, start_time = find_height_time_between_tides(
