@@ -161,10 +161,7 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 		raise ValueError("No high water found in the provided data.")
 
 
-class TideConstraints:
-	MIN = 'minimum',
-	MAX = 'maximum'
-
+class TidePointInTime:
 	def __init__(self, *, day_number: int, time: datetime.datetime):
 		self.day_number = day_number
 		self.time = time
@@ -174,7 +171,7 @@ class TideConstraints:
 
 
 class TideInterval:
-	def __init__(self, *, start: TideConstraints, end: TideConstraints):
+	def __init__(self, *, start: TidePointInTime, end: TidePointInTime):
 		self.start = start
 		self.end = end
 
@@ -259,7 +256,8 @@ def find_next_tide(*, tide_days: list[TideDay], day_number: int, tide_number: in
 def find_height_time_between_tides(*, height_to_find: float,
 								   first_tide_info: (TideHeight, int),
 								   second_tide_info: (TideHeight, int),
-								   hw_is_first: bool):
+								   compute_height_for_hw: bool,
+								   compute_height_for_first_tide: bool):
 
 	first_tide, first_tide_day_number = first_tide_info
 	second_tide, second_tide_day_number = second_tide_info
@@ -271,20 +269,27 @@ def find_height_time_between_tides(*, height_to_find: float,
 	start_time = datetime.datetime.combine(start_date, first_tide.time)
 	end_time = datetime.datetime.combine(end_date, second_tide.time)
 
-	tide_diff = end_time - start_time
+	if compute_height_for_first_tide:
+		if compute_height_for_hw:
+			start_time_12_hours = 6
+			end_time_12_hours = 12
+		else:
+			start_time_12_hours = 0
+			end_time_12_hours = 6
+	else:
+		if compute_height_for_hw:
+			start_time_12_hours = 0
+			end_time_12_hours = 6
+		else:
+			start_time_12_hours = 6
+			end_time_12_hours = 12
 
-	start_time_12_hours = 0
-	end_time_12_hours = 6
-	if hw_is_first:
-		start_time_12_hours = 6
-		end_time_12_hours = 0
+	tide_for_calculations = second_tide
+	if compute_height_for_first_tide:
+		tide_for_calculations = first_tide
 
-	hw = second_tide
-	if hw_is_first:
-		hw = first_tide
-
-	start_height = hw.compute_height(start_time_12_hours)
-	end_height = hw.compute_height(end_time_12_hours)
+	start_height = tide_for_calculations.compute_height(start_time_12_hours)
+	end_height = tide_for_calculations.compute_height(end_time_12_hours)
 
 	debug(f"First tide")
 	debug_func(first_tide.print)
@@ -300,7 +305,7 @@ def find_height_time_between_tides(*, height_to_find: float,
 		mid_time_12_hours = start_time_12_hours + (end_time_12_hours - start_time_12_hours) / 2
 		debug(f"Start time: {start_time}, end time: {end_time}, mid time: {mid_time}")
 		debug(f"12-hours-based start time: {start_time_12_hours:.1f}, end time: {end_time_12_hours:.1f}, mid time: {mid_time_12_hours:.1f}")
-		mid_height = hw.compute_height(mid_time_12_hours)
+		mid_height = tide_for_calculations.compute_height(mid_time_12_hours)
 		debug(f"Start height: {start_height:.1f}, end height: {end_height:.1f}, mid height: {mid_height:.1f}")
 
 		if (mid_height < height_to_find and start_height < end_height) or (
@@ -322,24 +327,35 @@ def find_height_time_between_tides(*, height_to_find: float,
 	return start_day_number, start_time
 
 
-def determine_water_height_intervals(constraint,
+def find_this_or_next_water(*, tide_days, life_cycle, day_number, tide_number):
+	specified_tide = tide_days[day_number - 1].heights[tide_number - 1]
+	# cw stands for 'center water', which is one of LW or HW, as indicated
+	# in the parameter
+	if specified_tide.type == life_cycle:
+		cw, cw_day_number, cw_tide_number = specified_tide, day_number, tide_number
+	else:
+		cw, cw_day_number, cw_tide_number = find_next_tide(
+			tide_days=tide_days, day_number=day_number, tide_number=tide_number)
+		if cw.type != life_cycle:
+			raise ValueError(f"No {life_cycle} found in the provided data.")
+	return cw, cw_day_number, cw_tide_number
+
+
+def determine_water_height_intervals(life_cycle,
 									 tide_days: list[TideDay],
 									 day_number: int, tide_number: int,
 									 height_to_find: float,
 									 tide_duration: datetime.datetime = None):
-	specified_tide = tide_days[day_number - 1].heights[tide_number - 1]
-	if specified_tide.type == TideHeight.HW:
-		hw, hw_day_number, hw_tide_number = specified_tide, day_number, tide_number
-	else:
-		hw, hw_day_number, hw_tide_number = find_next_tide(
-			tide_days=tide_days, day_number=day_number, tide_number=tide_number)
+	cw, cw_day_number, cw_tide_number = find_this_or_next_water(
+		tide_days=tide_days, life_cycle=life_cycle,
+		day_number=day_number, tide_number=tide_number)
 
 	prev_tide, prev_tide_day_number, _ = find_previous_tide(
-		tide_days=tide_days, day_number=day_number, tide_number=hw_tide_number)
+		tide_days=tide_days, day_number=day_number, tide_number=cw_tide_number)
 	next_tide, next_tide_day_number, _ = find_next_tide(
-		tide_days=tide_days, day_number=day_number, tide_number=hw_tide_number)
+		tide_days=tide_days, day_number=day_number, tide_number=cw_tide_number)
 
-	if hw is None:
+	if cw is None:
 		raise ValueError("No high water found in the provided data.")
 	if prev_tide is None and next_tide is None:
 		raise ValueError("No previous or next tide found in the provided data.")
@@ -347,14 +363,14 @@ def determine_water_height_intervals(constraint,
 	if tide_duration is None:
 		tide_duration = datetime.timedelta(hours=6, minutes=20)
 
-	hw_full_time = datetime.datetime.combine(datetime.datetime.now(), hw.time)
+	cw_full_time = datetime.datetime.combine(datetime.datetime.now(), cw.time)
 	if next_tide is None:
 		# We are at the end of the tidal data
 		# Set a fake next tide, based on a typical tide duration
 		# We copy the previous tide values, except for the time
 		next_tide_day_number = prev_tide_day_number + 1
 		next_tide = TideHeight(
-			time=(hw_full_time + tide_duration).time(),
+			time=(cw_full_time + tide_duration).time(),
 			height=prev_tide.height,
 			life_cycle=prev_tide.type,
 			neap_level=prev_tide.neap_level,
@@ -367,7 +383,7 @@ def determine_water_height_intervals(constraint,
 		# We copy the next tide values, except for the time
 		prev_tide_day_number = next_tide_day_number - 1
 		prev_tide = TideHeight(
-			time=(hw_full_time - tide_duration).time(),
+			time=(cw_full_time - tide_duration).time(),
 			height=next_tide.height,
 			life_cycle=next_tide.type,
 			neap_level=next_tide.neap_level,
@@ -378,21 +394,70 @@ def determine_water_height_intervals(constraint,
 	start_day_number, start_time = find_height_time_between_tides(
 		height_to_find=height_to_find,
 		first_tide_info=(prev_tide, prev_tide_day_number),
-		second_tide_info=(hw, day_number),
-		hw_is_first=False)
+		second_tide_info=(cw, day_number),
+		compute_height_for_hw=(life_cycle == TideHeight.HW),
+		compute_height_for_first_tide=False)
 
 	# Find the second time corresponding to the given height
 	end_day_number, end_time = find_height_time_between_tides(
 		height_to_find=height_to_find,
-		first_tide_info=(hw, day_number),
+		first_tide_info=(cw, day_number),
 		second_tide_info=(next_tide, next_tide_day_number),
-		hw_is_first=True)
+		compute_height_for_hw=(life_cycle == TideHeight.HW),
+		compute_height_for_first_tide=True)
 
 	return [
 		TideInterval(
-			start=TideConstraints(day_number=start_day_number, time=start_time),
-			end=TideConstraints(day_number=end_day_number, time=end_time)
+			start=TidePointInTime(day_number=start_day_number, time=start_time),
+			end=TidePointInTime(day_number=end_day_number, time=end_time)
 		)
 	]
 
 
+def determine_min_water_height_interval(tide_days: list[TideDay],
+										day_number: int, tide_number: int,
+										height_to_find: float,
+										tide_duration: datetime.datetime = None):
+	return determine_water_height_intervals(
+		life_cycle=TideHeight.HW,
+		tide_days=tide_days,
+		day_number=day_number,
+		tide_number=tide_number,
+		height_to_find=height_to_find,
+		tide_duration=tide_duration
+	)[0]
+
+
+def determine_max_water_height_intervals(tide_days: list[TideDay],
+										 day_number: int, tide_number: int,
+										 height_to_find: float,
+										 tide_duration: datetime.datetime = None):
+	_, hw_day_number, hw_tide_number = find_this_or_next_water(
+		tide_days=tide_days, life_cycle=TideHeight.HW,
+		day_number=day_number, tide_number=tide_number)
+
+	_, prev_lw_day_number, prev_lw_tide_number = find_previous_tide(
+		tide_days=tide_days, day_number=hw_day_number, tide_number=hw_tide_number)
+
+	interval_before_hw = determine_water_height_intervals(
+		life_cycle=TideHeight.LW,
+		tide_days=tide_days,
+		day_number=prev_lw_day_number,
+		tide_number=prev_lw_tide_number,
+		height_to_find=height_to_find,
+		tide_duration=tide_duration
+	)
+
+	_, next_lw_day_number, next_lw_tide_number = find_next_tide(
+		tide_days=tide_days, day_number=hw_day_number, tide_number=hw_tide_number)
+
+	interval_after_hw = determine_water_height_intervals(
+		life_cycle=TideHeight.LW,
+		tide_days=tide_days,
+		day_number=next_lw_day_number,
+		tide_number=next_lw_tide_number,
+		height_to_find=height_to_find,
+		tide_duration=tide_duration
+	)
+
+	return [*interval_before_hw, *interval_after_hw]

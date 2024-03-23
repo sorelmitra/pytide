@@ -4,7 +4,8 @@ import random
 
 from src.lib import set_log_level, LogLevel
 from src.tide_computations import generate_random_time_between_tides, find_closest_high_water, \
-	timedelta_to_twelve_based_tide_hours, determine_water_height_intervals, TideConstraints
+	timedelta_to_twelve_based_tide_hours, determine_max_water_height_intervals, \
+	determine_min_water_height_interval
 from src.tide_model import semidiurnal_tide, NEAP_MAX
 from src.tide_plot import plot_tide
 from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
@@ -43,10 +44,16 @@ if __name__ == '__main__':
 	print(f"On {tide_day.date.strftime('%B %d')}, at {given_time.strftime('%H%M')}, tide height is {tide_height_str}, 12-based tide-hour {twelve_based_time:.1f}")
 	closest_hw.print()
 
-	intervals = determine_water_height_intervals(
+	interval = determine_min_water_height_interval(
 		tide_days=tide_days, day_number=2, tide_number=3,
-		constraint=TideConstraints.MIN, height_to_find=4.3)
-	print(f"Intervals around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at least 4.3 m:")
+		height_to_find=4.3)
+	print(f"Interval around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at least 4.3 m:")
+	interval.print(start_date)
+
+	intervals = determine_max_water_height_intervals(
+		tide_days=tide_days, day_number=2, tide_number=3,
+		height_to_find=4.3)
+	print(f"Intervals around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at most 4.3 m:")
 	[interval.print(start_date) for interval in intervals]
 
 	plot_tide(
