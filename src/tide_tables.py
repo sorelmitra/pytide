@@ -37,7 +37,7 @@ class TideDay:
 	# @param tide_date: the date of the tide, a datetime.date() object
 	# @param neap_level: the neap level of the tide, a float number between 0 (springs) and NEAP_MAX (neaps)
 	# @param heights: the tide heights for the day, a list of TideHeight objects; the constructor will sort them by time
-	def __init__(self, *, tide_date=datetime.datetime.now().date(), neap_level=0.0, heights=[TideHeight()]):
+	def __init__(self, *, tide_date: datetime.date, heights: list[TideHeight], neap_level=0.0):
 		self.date = tide_date
 		self.neap_level = neap_level
 		self.heights = heights
@@ -56,7 +56,9 @@ class TideDay:
 
 
 class NeapDirection:
-	def __init__(self, *, cycle_length, tide_range_should_increase, start_days_after_neaps):
+	def __init__(self, *, cycle_length: int,
+				 tide_range_should_increase: bool,
+				 start_days_after_neaps: int):
 		self.tide_range_should_increase = tide_range_should_increase
 		self.step = 0
 		if cycle_length > 1:
@@ -79,28 +81,28 @@ class NeapDirection:
 			return self.get_max()
 		return 0.0
 
-	def get_next(self, current):
+	def get_next(self, neap_level: float):
 		if self.tide_range_should_increase:
-			return self._decrement(current)
+			return self._decrement(neap_level)
 
-		return self._increment(current)
+		return self._increment(neap_level)
 
-	def _increment(self, current):
-		next_value = current + self.step
+	def _increment(self, neap_level: float):
+		next_value = neap_level + self.step
 		if next_value > self.get_max() - 0.05:
 			next_value = self.get_max()
 		return next_value
 
-	def _decrement(self, current):
-		next_value = current - self.step
+	def _decrement(self, neap_level: float):
+		next_value = neap_level - self.step
 		if next_value < 0.05:
 			next_value = 0.0
 		return next_value
 
-	def is_at_end(self, level):
+	def is_at_end(self, neap_level: float):
 		if self.tide_range_should_increase:
-			return level == 0.0
-		return level == self.get_max()
+			return neap_level == 0.0
+		return neap_level == self.get_max()
 
 	def reverse(self):
 		self.tide_range_should_increase = not self.tide_range_should_increase
@@ -248,7 +250,7 @@ def generate_tide_days(start_date=datetime.datetime.now(),
 	return tide_days
 
 
-def compute_max_hw(tide_days):
+def compute_max_hw(tide_days: list[TideDay]):
 	max_hw = 0
 	for tide_day in tide_days:
 		for tide_height in tide_day.heights:
@@ -257,7 +259,7 @@ def compute_max_hw(tide_days):
 	return max_hw
 
 
-def compute_max_lw(tide_days):
+def compute_max_lw(tide_days: list[TideDay]):
 	max_lw = 0
 	for tide_day in tide_days:
 		for tide_height in tide_day.heights:
@@ -266,7 +268,7 @@ def compute_max_lw(tide_days):
 	return max_lw
 
 
-def compute_springs_mean(tide_days):
+def compute_springs_mean(tide_days: list[TideDay]):
 	springs_mean_values = []
 	for tide_day in tide_days:
 		if tide_day.neap_level == 0:
@@ -280,7 +282,7 @@ def compute_springs_mean(tide_days):
 	return sum(springs_mean_values) / len(springs_mean_values)
 
 
-def compute_neaps_mean(tide_days):
+def compute_neaps_mean(tide_days: list[TideDay]):
 	neaps_mean_values = []
 	for tide_day in tide_days:
 		if tide_day.neap_level == NEAP_MAX:

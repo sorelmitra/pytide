@@ -50,7 +50,7 @@ def sample_tide_days():
 
 def test_find_single_interval_of_minimum_water_height_no_next_tide(sample_tide_days):
 	intervals = determine_water_height_intervals(
-		tide_days=sample_tide_days, day_number=1,
+		tide_days=sample_tide_days, day_number=1, tide_number=1,
 		constraint=TideConstraints.MIN, height_to_find=4.3)
 	assert len(intervals) == 1
 	interval = intervals[0]
@@ -62,7 +62,7 @@ def test_find_single_interval_of_minimum_water_height_no_next_tide(sample_tide_d
 
 def test_find_single_interval_of_minimum_water_height(sample_tide_days):
 	intervals = determine_water_height_intervals(
-		tide_days=sample_tide_days, day_number=2,
+		tide_days=sample_tide_days, day_number=2, tide_number=1,
 		constraint=TideConstraints.MIN, height_to_find=4.3)
 	assert len(intervals) == 1
 	interval = intervals[0]

@@ -4,7 +4,8 @@ import random
 from src.tide_tables import TideHeight, TideDay
 
 
-def generate_random_time_between_tides(*, tide_days, day_number, tide_number):
+def generate_random_time_between_tides(*, tide_days: list[TideDay],
+									   day_number: int, tide_number: int):
 	day_index = day_number - 1
 	tide_index = tide_number - 1
 
@@ -44,7 +45,7 @@ def generate_random_time_between_tides(*, tide_days, day_number, tide_number):
 	return random_datetime.time()
 
 
-def timedelta_to_twelve_based_tide_hours(td):
+def timedelta_to_twelve_based_tide_hours(td: datetime.timedelta):
 	"""
 	Converts a datetime.timedelta object to a floating point number representing tide hours.
 	Tide hours run between 0 and 12, with 0 representing the first low water of the interval, 6 representing the high water, and 12 representing the second low water.
@@ -77,7 +78,8 @@ class TideTimePosition:
 	- tide_number: The tide number within the day (1-based) of the tide time.
 	"""
 
-	def __init__(self, *, time, day_number, tide_number, hw_diff):
+	def __init__(self, *, time: datetime.time, day_number: int, tide_number: int,
+				 hw_diff: datetime.timedelta):
 		self.time = time
 		self.day_number = day_number
 		self.tide_number = tide_number
@@ -103,8 +105,7 @@ class TideTimePosition:
 
 def find_closest_high_water(*, tide_days, day_number, given_time):
 	min_time_diff = datetime.timedelta.max
-	closest_hw_time = TideTimePosition(
-		time=None, day_number=None, tide_number=None, hw_diff=None)
+	closest_hw_time = None
 	day_index = day_number - 1
 
 	# Helper function to update the closest HW tide based on a new candidate
@@ -123,10 +124,11 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 
 		if abs_time_diff < min_time_diff:
 			min_time_diff = abs_time_diff
-			closest_hw_time.time = candidate_time
-			closest_hw_time.day_number = candidate_day_number
-			closest_hw_time.tide_number = candidate_tide_number
-			closest_hw_time.hw_diff = time_diff
+			closest_hw_time = TideTimePosition(
+				time=candidate_time,
+				day_number=candidate_day_number,
+				tide_number=candidate_tide_number,
+				hw_diff=time_diff)
 			# print('[DEBUG]', 'Chosen')
 
 	# Search for the closest HW tide in the current, previous, and next day
@@ -152,7 +154,7 @@ def find_closest_high_water(*, tide_days, day_number, given_time):
 						candidate_tide_number=tide_days[current_day_index].heights.index(tide) + 1,
 						day_step=index_offset)
 
-	if closest_hw_time.time is not None:
+	if closest_hw_time is not None:
 		return closest_hw_time
 	else:
 		raise ValueError("No high water found in the provided data.")
@@ -162,17 +164,17 @@ class TideConstraints:
 	MIN = 'minimum',
 	MAX = 'maximum'
 
-	def __init__(self, day_number=0, time=datetime.datetime.now()):
+	def __init__(self, *, day_number: int, time: datetime.datetime):
 		self.day_number = day_number
 		self.time = time
 
 class TideInterval:
-	def __init__(self, start=TideConstraints(), end=TideConstraints()):
+	def __init__(self, *, start: TideConstraints, end: TideConstraints):
 		self.start = start
 		self.end = end
 
 
-def find_previous_tide(*, tide_days=[TideDay()], day_number, tide_number):
+def find_previous_tide(*, tide_days: list[TideDay], day_number: int, tide_number: int):
 	"""
 	Finds the previous high water (HW) or low water (LW) tide in a list of TideDay objects.
 
@@ -205,7 +207,7 @@ def find_previous_tide(*, tide_days=[TideDay()], day_number, tide_number):
 	return None  # Return None if no previous HW or LW is found
 
 
-def find_next_tide(*, tide_days=[TideDay()], day_number, tide_number):
+def find_next_tide(*, tide_days: list[TideDay], day_number: int, tide_number: int):
 	"""
 	Finds the next high water (HW) or low water (LW) tide in a list of TideDay objects.
 
@@ -235,9 +237,10 @@ def find_next_tide(*, tide_days=[TideDay()], day_number, tide_number):
 	return None, 0  # Return None if no next HW or LW is found
 
 
-def find_height_time_between_tides(*, height_to_find,
-								   first_tide=TideHeight(), second_tide=TideHeight(),
-								   hw_is_first):
+def find_height_time_between_tides(*, height_to_find: float,
+								   first_tide: TideHeight,
+								   second_tide: TideHeight,
+								   hw_is_first: bool):
 	start_time = datetime.datetime.combine(datetime.date.today(), first_tide.time)
 	end_time = datetime.datetime.combine(datetime.date.today(), second_tide.time)
 
@@ -291,9 +294,10 @@ def find_height_time_between_tides(*, height_to_find,
 	return start_time
 
 
-def determine_water_height_intervals(constraint=TideConstraints.MIN,
-									 tide_days=[TideDay()], day_number=0,
-									 height_to_find=0.0):
+def determine_water_height_intervals(constraint,
+									 tide_days: list[TideDay],
+									 day_number: int, tide_number: int,
+									 height_to_find: float):
 	hw, hw_tide_number = find_next_tide(
 		tide_days=tide_days, day_number=day_number, tide_number=1)
 	previous_tide, _ = find_previous_tide(
