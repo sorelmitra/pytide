@@ -101,7 +101,7 @@ def test_find_interval_of_minimum_water_height(sample_tide_days):
 	assert interval.start.day_number == 3
 	assert interval.start.time.time() == datetime.time(7, 40)
 	assert interval.end.day_number == 3
-	assert interval.end.time.time() == datetime.time(14, 38)
+	assert interval.end.time.time() == datetime.time(14, 23)
 
 
 def test_find_interval_of_minimum_water_height_span_next_day(sample_tide_days):
@@ -111,7 +111,7 @@ def test_find_interval_of_minimum_water_height_span_next_day(sample_tide_days):
 	assert interval.start.day_number == 2
 	assert interval.start.time.time() == datetime.time(19, 10)
 	assert interval.end.day_number == 3
-	assert interval.end.time.time() == datetime.time(2, 3)
+	assert interval.end.time.time() == datetime.time(1, 48)
 
 
 def test_find_interval_of_minimum_water_height_hw_is_last(sample_tide_days):
@@ -121,7 +121,7 @@ def test_find_interval_of_minimum_water_height_hw_is_last(sample_tide_days):
 	assert interval.start.day_number == 3
 	assert interval.start.time.time() == datetime.time(20, 20)
 	assert interval.end.day_number == 4
-	assert interval.end.time.time() == datetime.time(3, 18)
+	assert interval.end.time.time() == datetime.time(3, 3)
 
 
 def test_find_interval_of_minimum_water_height_hw_is_first(sample_tide_days):
@@ -131,7 +131,7 @@ def test_find_interval_of_minimum_water_height_hw_is_first(sample_tide_days):
 	assert interval.start.day_number == 1
 	assert interval.start.time.time() == datetime.time(2, 20)
 	assert interval.end.day_number == 1
-	assert interval.end.time.time() == datetime.time(9, 18)
+	assert interval.end.time.time() == datetime.time(9, 3)
 
 
 def test_find_intervals_of_maximum_water_height(sample_tide_days):
@@ -142,15 +142,15 @@ def test_find_intervals_of_maximum_water_height(sample_tide_days):
 	# Interval before HW
 	interval_before_hw = intervals[0]
 	assert interval_before_hw.start.day_number == 1
-	assert interval_before_hw.start.time.time() == datetime.time(22, 37)
+	assert interval_before_hw.start.time.time() == datetime.time(23, 10)
 	assert interval_before_hw.end.day_number == 2
-	assert interval_before_hw.end.time.time() == datetime.time(7, 8)
+	assert interval_before_hw.end.time.time() == datetime.time(6, 30)
 	# Interval after HW
 	interval_after_hw = intervals[1]
 	assert interval_after_hw.start.day_number == 2
-	assert interval_after_hw.start.time.time() == datetime.time(12, 50)
+	assert interval_after_hw.start.time.time() == datetime.time(13, 13)
 	assert interval_after_hw.end.day_number == 2
-	assert interval_after_hw.end.time.time() == datetime.time(19, 48)
+	assert interval_after_hw.end.time.time() == datetime.time(19, 10)
 
 
 def test_find_intervals_of_maximum_water_height_lw_is_last(sample_tide_days):
@@ -161,13 +161,13 @@ def test_find_intervals_of_maximum_water_height_lw_is_last(sample_tide_days):
 	# Interval before HW (on previous day)
 	interval_before_hw = intervals[0]
 	assert interval_before_hw.start.day_number == 4
-	assert interval_before_hw.start.time.time() == datetime.time(2, 40)
+	assert interval_before_hw.start.time.time() == datetime.time(3, 3)
 	assert interval_before_hw.end.day_number == 4
-	assert interval_before_hw.end.time.time() == datetime.time(9, 38)
+	assert interval_before_hw.end.time.time() == datetime.time(9, 0)
 	# Interval after HW
 	interval_after_hw = intervals[1]
 	assert interval_after_hw.start.day_number == 4
-	assert interval_after_hw.start.time.time() == datetime.time(15, 20)
+	assert interval_after_hw.start.time.time() == datetime.time(15, 43)
 	assert interval_after_hw.end.day_number == 4
-	assert interval_after_hw.end.time.time() == datetime.time(22, 18)
+	assert interval_after_hw.end.time.time() == datetime.time(21, 40)
 

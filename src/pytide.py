@@ -44,16 +44,19 @@ if __name__ == '__main__':
 	print(f"On {tide_day.date.strftime('%B %d')}, at {given_time.strftime('%H%M')}, tide height is {tide_height_str}, 12-based tide-hour {twelve_based_time:.1f}")
 	closest_hw.print()
 
+	test_day_number = 2
+	test_tide_number = 3
+	test_height = 4.3
 	interval = determine_min_water_height_interval(
-		tide_days=tide_days, day_number=2, tide_number=3,
-		height_to_find=4.3)
-	print(f"Interval around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at least 4.3 m:")
+		tide_days=tide_days, day_number=test_day_number, tide_number=test_tide_number,
+		height_to_find=test_height)
+	print(f"Interval around tide #{test_tide_number} of {start_date + datetime.timedelta(days=1)} during which tide is at least {test_height} m:")
 	interval.print(start_date)
 
 	intervals = determine_max_water_height_intervals(
-		tide_days=tide_days, day_number=2, tide_number=3,
-		height_to_find=4.3)
-	print(f"Intervals around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at most 4.3 m:")
+		tide_days=tide_days, day_number=test_day_number, tide_number=test_tide_number,
+		height_to_find=test_height)
+	print(f"Intervals around tide #{test_tide_number} of {start_date + datetime.timedelta(days=1)} during which tide is at most {test_height} m:")
 	[interval.print(start_date) for interval in intervals]
 
 	plot_tide(
