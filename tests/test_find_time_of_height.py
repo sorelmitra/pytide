@@ -19,6 +19,23 @@ def sample_tide_days():
 			tide_date=datetime.date(2024, 1, 1),
 			heights=[
 				TideHeight(
+					time=datetime.time(5, 50), height=5.8,
+					life_cycle=TideHeight.HW, compute_height=compute_height,
+				),
+				TideHeight(
+					time=datetime.time(12, 10), height=3.0,
+					life_cycle=TideHeight.LW,
+				),
+				TideHeight(
+					time=datetime.time(18, 30), height=5.9,
+					life_cycle=TideHeight.HW, compute_height=compute_height
+				),
+			],
+		),
+		TideDay(
+			tide_date=datetime.date(2024, 1, 2),
+			heights=[
+				TideHeight(
 					time=datetime.time(3, 40), height=2.6,
 					life_cycle=TideHeight.LW,
 				),
@@ -37,7 +54,7 @@ def sample_tide_days():
 			],
 		),
 		TideDay(
-			tide_date=datetime.date(2024, 1, 2),
+			tide_date=datetime.date(2024, 1, 3),
 			heights=[
 				TideHeight(
 					time=datetime.time(4, 50), height=2.6,
@@ -62,35 +79,47 @@ def sample_tide_days():
 
 def test_find_interval_of_minimum_water_height(sample_tide_days):
 	intervals = determine_water_height_intervals(
-		tide_days=sample_tide_days, day_number=2, tide_number=1,
+		tide_days=sample_tide_days, day_number=3, tide_number=1,
 		constraint=TideConstraints.MIN, height_to_find=4.3)
 	assert len(intervals) == 1
 	interval = intervals[0]
-	assert interval.start.day_number == 2
-	assert interval.start.time.time() == datetime.time(7, 28)
-	assert interval.end.day_number == 2
-	assert interval.end.time.time() == datetime.time(14, 51)
+	assert interval.start.day_number == 3
+	assert interval.start.time.time() == datetime.time(7, 40)
+	assert interval.end.day_number == 3
+	assert interval.end.time.time() == datetime.time(14, 38)
 
 
 def test_find_interval_of_minimum_water_height_span_next_day(sample_tide_days):
-	intervals = determine_water_height_intervals(
-		tide_days=sample_tide_days, day_number=1, tide_number=3,
-		constraint=TideConstraints.MIN, height_to_find=4.3)
-	assert len(intervals) == 1
-	interval = intervals[0]
-	assert interval.start.day_number == 1
-	assert interval.start.time.time() == datetime.time(18, 58)
-	assert interval.end.day_number == 2
-	assert interval.end.time.time() == datetime.time(2, 8)
-
-
-def test_find_interval_of_minimum_water_height_hw_is_last(sample_tide_days):
 	intervals = determine_water_height_intervals(
 		tide_days=sample_tide_days, day_number=2, tide_number=3,
 		constraint=TideConstraints.MIN, height_to_find=4.3)
 	assert len(intervals) == 1
 	interval = intervals[0]
 	assert interval.start.day_number == 2
-	assert interval.start.time.time() == datetime.time(20, 8)
+	assert interval.start.time.time() == datetime.time(19, 10)
 	assert interval.end.day_number == 3
-	assert interval.end.time.time() == datetime.time(3, 31)
+	assert interval.end.time.time() == datetime.time(2, 3)
+
+
+def test_find_interval_of_minimum_water_height_hw_is_last(sample_tide_days):
+	intervals = determine_water_height_intervals(
+		tide_days=sample_tide_days, day_number=3, tide_number=3,
+		constraint=TideConstraints.MIN, height_to_find=4.3)
+	assert len(intervals) == 1
+	interval = intervals[0]
+	assert interval.start.day_number == 3
+	assert interval.start.time.time() == datetime.time(20, 20)
+	assert interval.end.day_number == 4
+	assert interval.end.time.time() == datetime.time(3, 18)
+
+
+def test_find_interval_of_minimum_water_height_hw_is_last_2(sample_tide_days):
+	intervals = determine_water_height_intervals(
+		tide_days=sample_tide_days, day_number=1, tide_number=3,
+		constraint=TideConstraints.MIN, height_to_find=4.3)
+	assert len(intervals) == 1
+	interval = intervals[0]
+	assert interval.start.day_number == 1
+	assert interval.start.time.time() == datetime.time(15, 0)
+	assert interval.end.day_number == 1
+	assert interval.end.time.time() == datetime.time(23, 32)

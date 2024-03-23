@@ -178,8 +178,19 @@ class TideInterval:
 		self.start = start
 		self.end = end
 
-	def print(self):
-		print(f"[{self.start.time} - {self.end.time}]")
+	def print(self, initial_date):
+		"""
+		Prints the interval in the format [start_time - end_time].
+		Uses the initial_date and the day_number of the start and end times
+		to determine the date of the start and end times.
+		"""
+		start_time = datetime.datetime.combine(initial_date, self.start.time.time())
+		start_time += datetime.timedelta(days=self.start.day_number - 1)
+
+		end_time = datetime.datetime.combine(initial_date, self.end.time.time())
+		end_time += datetime.timedelta(days=self.end.day_number - 1)
+
+		print(f"[{start_time} - {end_time}]")
 
 
 def find_previous_tide(*, tide_days: list[TideDay], day_number: int, tide_number: int):
@@ -262,11 +273,11 @@ def find_height_time_between_tides(*, height_to_find: float,
 
 	tide_diff = end_time - start_time
 
-	start_time_12_hours = timedelta_to_twelve_based_tide_hours(tide_diff)
+	start_time_12_hours = 0
 	end_time_12_hours = 6
 	if hw_is_first:
 		start_time_12_hours = 6
-		end_time_12_hours = timedelta_to_twelve_based_tide_hours(tide_diff)
+		end_time_12_hours = 0
 
 	hw = second_tide
 	if hw_is_first:
@@ -316,8 +327,13 @@ def determine_water_height_intervals(constraint,
 									 day_number: int, tide_number: int,
 									 height_to_find: float,
 									 tide_duration: datetime.datetime = None):
-	hw, hw_day_number, hw_tide_number = find_next_tide(
-		tide_days=tide_days, day_number=day_number, tide_number=tide_number)
+	specified_tide = tide_days[day_number - 1].heights[tide_number - 1]
+	if specified_tide.type == TideHeight.HW:
+		hw, hw_day_number, hw_tide_number = specified_tide, day_number, tide_number
+	else:
+		hw, hw_day_number, hw_tide_number = find_next_tide(
+			tide_days=tide_days, day_number=day_number, tide_number=tide_number)
+
 	prev_tide, prev_tide_day_number, _ = find_previous_tide(
 		tide_days=tide_days, day_number=day_number, tide_number=hw_tide_number)
 	next_tide, next_tide_day_number, _ = find_next_tide(

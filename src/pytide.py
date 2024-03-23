@@ -14,7 +14,7 @@ if __name__ == '__main__':
 	ap = argparse.ArgumentParser(
 		description="PyTide: Generate realistic tide tables, curves.  "
 					"Solve common tide problems")
-	ap.add_argument("-v", help="Be more verbose, helps debugging problems")
+	ap.add_argument("-v", action='store_true', help="Be more verbose, helps debugging problems")
 	args = ap.parse_args()
 	set_log_level(LogLevel.INFO)
 	if args.v:
@@ -46,8 +46,8 @@ if __name__ == '__main__':
 	intervals = determine_water_height_intervals(
 		tide_days=tide_days, day_number=2, tide_number=3,
 		constraint=TideConstraints.MIN, height_to_find=4.3)
-	print(f"Intervals during which tide is at least 4.3 m:")
-	[interval.print() for interval in intervals]
+	print(f"Intervals around tide #3 of {start_date + datetime.timedelta(days=1)} during which tide is at least 4.3 m:")
+	[interval.print(start_date) for interval in intervals]
 
 	plot_tide(
 		springs_tide_func=(semidiurnal_tide()),
