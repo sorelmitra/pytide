@@ -1,9 +1,8 @@
 import datetime
+
 import pytest
 
-from datetime import timedelta
-
-from src.tide_computations import find_closest_high_water, TideTimePosition, timedelta_to_twelve_based_tide_hours
+from src.tide_closest_hw import ClosestHighWater, find_closest_high_water
 from src.tide_tables import TideDay, TideHeight
 
 
@@ -103,44 +102,34 @@ def test_no_hw_tides(sample_tide_days):
 
 def test_hw_positive_hour_difference():
 	td = datetime.timedelta(hours=2, minutes=45)
-	hw_pos = TideTimePosition(
+	hw_pos = ClosestHighWater(
 		time=datetime.time(14, 45), day_number=1, tide_number=2, hw_diff=td)
 	assert hw_pos.get_hw_hour_string() == "HW+3"
 
 
 def test_hw_negative_hour_and_thirty_minutes_difference():
 	td = datetime.timedelta(hours=-1, minutes=-30)
-	hw_pos = TideTimePosition(
+	hw_pos = ClosestHighWater(
 		time=datetime.time(10, 30), day_number=1, tide_number=2, hw_diff=td)
 	assert hw_pos.get_hw_hour_string() == "HW-2"
 
 
 def test_hw_exactly_thirty_minutes_difference():
 	td = datetime.timedelta(minutes=30)
-	hw_pos = TideTimePosition(
+	hw_pos = ClosestHighWater(
 		time=datetime.time(11, 30), day_number=1, tide_number=2, hw_diff=td)
 	assert hw_pos.get_hw_hour_string() == "HW"
 
 
 def test_hw_boundary_condition_hour_bump():
 	td = datetime.timedelta(minutes=31)
-	hw_pos = TideTimePosition(
+	hw_pos = ClosestHighWater(
 		time=datetime.time(10, 31), day_number=1, tide_number=2, hw_diff=td)
 	assert hw_pos.get_hw_hour_string() == "HW+1"
 
 
 def test_hw_zero_hour_difference():
 	td = datetime.timedelta(hours=0)
-	hw_pos = TideTimePosition(
+	hw_pos = ClosestHighWater(
 		time=datetime.time(12, 0), day_number=1, tide_number=2, hw_diff=td)
 	assert hw_pos.get_hw_hour_string() == "HW"
-
-
-def test_timedelta_to_twelve_based_tide_hours():
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=-7)) == 5.0
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=-6)) == 0.0
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=-4, minutes=-20)) == pytest.approx(1.6, 0.1)
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=0)) == 6.0
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=6)) == 12.0
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=2, minutes=30)) == 8.5
-	assert timedelta_to_twelve_based_tide_hours(timedelta(hours=7)) == 1

@@ -3,13 +3,16 @@ import datetime
 import random
 
 from src.lib import set_log_level, LogLevel
-from src.tide_computations import generate_random_time_between_tides, find_closest_high_water, \
-	timedelta_to_twelve_based_tide_hours, determine_max_water_height_intervals, \
-	determine_min_water_height_interval
+from src.tide_closest_hw import find_closest_high_water
+from src.tide_height_intervals import determine_min_water_height_interval, \
+	determine_max_water_height_intervals
 from src.tide_model import semidiurnal_tide, NEAP_MAX
 from src.tide_plot import plot_tide
-from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, compute_max_hw, compute_neaps_mean, \
+from src.tide_tables import generate_tide_days, reset_day, compute_springs_mean, \
+	compute_max_hw, compute_neaps_mean, \
 	compute_max_lw
+from src.tide_time_utils import generate_random_time_between_tides, \
+	timedelta_to_twelve_based_tide_hours
 
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser(

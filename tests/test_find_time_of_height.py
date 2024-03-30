@@ -2,7 +2,8 @@ import datetime
 
 import pytest
 
-from src.tide_computations import determine_min_water_height_interval, determine_max_water_height_intervals
+from src.tide_height_intervals import determine_min_water_height_interval, \
+	determine_max_water_height_intervals
 from src.tide_model import semidiurnal_tide
 from src.tide_tables import TideDay, TideHeight
 
